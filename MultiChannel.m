@@ -89,42 +89,55 @@ ylabel('V/μV');
 title('channel-2');
 %% 交互式分段截取
 segment_length = 700; % 每个片段的长度
-up=zeros(segment_length,10);
-interactive_signal_clipping(clip(:,1), segment_length);
-
-
+motion='down';    %选择次次分割的动作名称
+interactive_signal_clipping(clip, segment_length,motion);
 %% 
-function interactive_signal_clipping(clip, segment_length)
+function segClip = interactive_signal_clipping(clip, segment_length,motion)
     % 创建图形界面
     f = figure('Name', 'Interactive Signal Clipping', 'NumberTitle', 'off', 'WindowState', 'maximized');
-    ax = axes(f);
-    plot(ax, clip);
-    title(ax, 'Select start point of the UP motion');
-    xlabel(ax, 'Sample Number');
-    ylabel(ax, 'Signal Amplitude');
+    ax1 = subplot(2, 1, 1, 'Parent', f);
+    plot(ax1, clip(:,1));
+    title(ax1, 'Channel 1: Select start point of the segment');
+    xlabel(ax1, 'Sample Number');
+    ylabel(ax1, 'Signal Amplitude');
+    
+    ax2 = subplot(2, 1, 2, 'Parent', f);
+    plot(ax2, clip(:,2));
+    title(ax2, 'Channel 2: Select start point of the segment');
+    xlabel(ax2, 'Sample Number');
+    ylabel(ax2, 'Signal Amplitude');
+    
+    % 用于存储选择的片段
+    segClip = [];
+    
     % 添加交互按钮
     uicontrol('Style', 'pushbutton', 'String', 'Select Segment', 'Position', [20 20 100 40], 'Callback', @select_segment);
     uicontrol('Style', 'pushbutton', 'String', 'Finish', 'Position', [140 20 100 40], 'Callback', @finish_selection);
-    
-    % 用于存储选择的片段
-    selected_segments = {};
     
     function select_segment(~, ~)
         [x, ~] = ginput(1); % 选择起始点
         start_index = round(x); % 将起始点四舍五入到最近的整数索引
         end_index = start_index + segment_length - 1;
         
-        if end_index > length(clip)
-            msgbox('End index exceeds clip length. Please select again.', 'Error', 'error');
+        if end_index > size(clip, 1)
+            msgbox('End index exceeds data length. Please select again.', 'Error', 'error');
             return;
         end
         
-        segment = clip(start_index:end_index);
+        segment1 = clip(start_index:end_index, 1);
+        segment2 = clip(start_index:end_index, 2);
         
         % 显示选择的片段
         figure;
-        plot(segment);
-        title(['Segment from index ' num2str(start_index) ' to ' num2str(end_index)]);
+        subplot(2, 1, 1);
+        plot(segment1);
+        title(['Channel 1: Segment from index ' num2str(start_index) ' to ' num2str(end_index)]);
+        xlabel('Sample Number');
+        ylabel('Signal Amplitude');
+        
+        subplot(2, 1, 2);
+        plot(segment2);
+        title(['Channel 2: Segment from index ' num2str(start_index) ' to ' num2str(end_index)]);
         xlabel('Sample Number');
         ylabel('Signal Amplitude');
         
@@ -132,21 +145,21 @@ function interactive_signal_clipping(clip, segment_length)
         choice = questdlg('Keep this segment?', 'Segment Selection', 'Yes', 'No', 'No');
         
         if strcmp(choice, 'Yes')
-            selected_segments{end+1} = segment; % 添加到选中的片段中
+            new_segment = [segment1, segment2]; % 将两个通道的片段合并为2行矩阵
+            if isempty(segClip)
+                segClip = new_segment; % 初始化矩阵
+            else
+                segClip = [segClip, new_segment]; % 将新片段添加为新列
+            end
         end
         
         close(gcf); % 关闭片段显示图
     end
 
     function finish_selection(~, ~)
-        % 将选择的片段保存到矩阵中
-        if ~isempty(selected_segments)
-            segments = cell2mat(selected_segments');
-        else
-            segments = [];
-        end
-        % 将选择的片段保存到工作区变量
-        assignin('base', 'up', segments);
+        % 关闭图形界面
         close(f);
+        disp('Selected segments stored in the variable "segClip".');
+        assignin('base', motion, segClip); % 将结果保存到工作区变量
     end
 end
