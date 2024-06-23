@@ -15,10 +15,10 @@ fclose(fid);
 emg_multi=data{2};
 emg_lab=data{1};
 cd(mfile_path)
-emg_div = zeros(1000, 8);  % 初始化存放结果的矩阵
+emg_div = zeros(1000, 2);  % 初始化存放结果的矩阵
 %%
-length=zeros(1,8);
-lab={'00>','01>','02>','03>','04>','05>','06>','07>'};
+length=zeros(1,2);
+lab={'00>','01>'};
 %%
 for i = 1:numel(emg_multi)
     if isequal(emg_lab(i),lab(1)) 
@@ -28,46 +28,8 @@ for i = 1:numel(emg_multi)
     elseif isequal(emg_lab(i),lab(2))
         emg_div(length(2)+1,2)= emg_multi(i);
         length(2)=length(2)+1;
-
-    elseif isequal(emg_lab(i),lab(3))
-        emg_div(length(3)+1,3)= emg_multi(i);
-        length(3)=length(3)+1;
-
-    elseif isequal(emg_lab(i),lab(4))
-        emg_div(length(4)+1,4)= emg_multi(i);
-        length(4)=length(4)+1;
-
-    elseif isequal(emg_lab(i),lab(5))
-        emg_div(length(5)+1,5)= emg_multi(i);
-        length(5)=length(5)+1;
-
-    elseif isequal(emg_lab(i),lab(6))
-        emg_div(length(6)+1,6)= emg_multi(i);
-        length(6)=length(6)+1;
-
-    elseif isequal(emg_lab(i),lab(7))
-        emg_div(length(7)+1,7)= emg_multi(i);
-        length(7)=length(7)+1;
-
-    elseif isequal(emg_lab(i),lab(8))
-        emg_div(length(8)+1,8)= emg_multi(i);
-        length(8)=length(8)+1;
     end
 end
- 
-% %% 原始图像
-% figure(1);
-% subplot(2,1,1)
-% plot(emg_div(1:end,1));
-% xlabel('t/s');
-% ylabel('V/μV');
-% title('channel-1');
-% 
-% subplot(2,1,2)
-% plot(emg_div(:,2));
-% xlabel('t');
-% ylabel('μV');
-% title('channel-2');
 
 %% 小波滤波
 %waveletType = 'db4';   good
