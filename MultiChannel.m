@@ -6,7 +6,7 @@ mfile_path=pwd;
 cd(mfile_path)
 
 %% 读取文件，匹配列表
-fid=fopen('dyf62001.log');
+fid=fopen('dyf60703.log');
 %跳过前三行
 textscan(fid, '%*[^\n]', 3);
 data=textscan(fid,'%s %f');
@@ -16,10 +16,9 @@ emg_multi=data{2};
 emg_lab=data{1};
 cd(mfile_path)
 emg_div = zeros(1000, 2);  % 初始化存放结果的矩阵
-%%
 length=zeros(1,2);
 lab={'00>','01>'};
-%%
+
 for i = 1:numel(emg_multi)
     if isequal(emg_lab(i),lab(1)) 
         emg_div(length(1)+1,1)= emg_multi(i);
@@ -31,18 +30,51 @@ for i = 1:numel(emg_multi)
     end
 end
 
-%% 小波滤波
+%% 滤波
+%小波滤波
 %waveletType = 'db4';   good
 waveletType='dmey';
 level = 11;  % 分解层数可以根据你的数据调整
 
 data=emg_div(~any(isnan(emg_div), 2), :);
 data_filtered = zeros(size(data));  % 初始化过滤后的数据矩阵
+temp1 = zeros(size(data));
+temp2 = zeros(size(data));
 
 for k = 1:2
     [C, L] = wavedec(data(:,k), level, waveletType);  % 小波分解
     C(1:L(1)) = 0;  % 去除最低频的近似系数
-    data_filtered(:,k) = waverec(C, L, waveletType);  % 重构信号
+    temp1(:,k) = waverec(C, L, waveletType);  % 重构信号
+end
+
+%带阻滤波
+fs=250;
+% 设计FIR带阻滤波器
+freq_band = [40 60]; % 带阻频率范围
+filter_order = 500; % 滤波器阶数，具体阶数可根据需要调整
+nyquist = fs / 2; % 奈奎斯特频率
+bandstop_freq = freq_band / nyquist; % 归一化频率
+
+% 设计带阻FIR滤波器
+b = fir1(filter_order, bandstop_freq, 'stop');
+
+% 对每一列信号进行带阻滤波
+for i = 1:2
+    temp2(:, i) = filtfilt(b, 1, temp1(:, i));
+end
+
+% 设计FIR带阻滤波器
+freq_band = [90 110]; % 带阻频率范围
+filter_order = 500; % 滤波器阶数，具体阶数可根据需要调整
+nyquist = fs / 2; % 奈奎斯特频率
+bandstop_freq = freq_band / nyquist; % 归一化频率
+
+% 设计带阻FIR滤波器
+b = fir1(filter_order, bandstop_freq, 'stop');
+
+% 对每一列信号进行带阻滤波
+for i = 1:2
+    data_filtered(:, i) = filtfilt(b, 1, temp2(:, i));
 end
 
 % 滤波前后对比
@@ -72,7 +104,7 @@ ylabel('μV');
 title('channel-2滤波后');
 
 %% 去头去尾
-head=16050;
+head=10000;
 tail=102300;
 clip=data_filtered(head:tail,:);
 figure('Name','去头去尾');
